@@ -182,14 +182,24 @@ class ControllableSync(Sync):
             start_index = resolver[0]
             end_index = min(resolver[1], len(msg_list), len(state_msg_list))
             if msg_list[start_index:end_index] != state_msg_list[start_index:end_index]:
+                resolver_input = [
+                    int(msg) if msg.isdigit() else msg
+                    for msg in msg_list[start_index:end_index]
+                ]
                 (domain, service, data) = resolver[2](
-                    [
-                        int(msg) if msg.isdigit() else msg
-                        for msg in msg_list[start_index:end_index]
-                    ],
+                    resolver_input,
                     state.attributes,
                 )
                 data.update({ATTR_ENTITY_ID: self._entity_id})
+                _LOGGING.debug(
+                    "Resolved command for entity=%s received=%s current=%s service=%s.%s data=%s",
+                    self._entity_id,
+                    msg_list,
+                    state_msg_list,
+                    domain,
+                    service,
+                    data,
+                )
                 self._hass.services.call(
                     domain=domain, service=service, service_data=data
                 )

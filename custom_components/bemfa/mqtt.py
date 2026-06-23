@@ -38,7 +38,7 @@ class BemfaMqtt:
         self._hass = hass
 
         # Init MQTT connection
-        self._mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, uid, mqtt.MQTTv311)
+        self._mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, client_id=uid, protocol=mqtt.MQTTv311)
 
         self._topic_to_sync: dict[str, Sync] = {}
 
@@ -148,4 +148,12 @@ class BemfaMqtt:
             return
 
         if message.topic in self._topic_to_sync:
-            self._topic_to_sync[message.topic].resolve_msg(message.payload.decode())
+            payload = message.payload.decode()
+            sync = self._topic_to_sync[message.topic]
+            _LOGGING.debug(
+                "Received MQTT command for entity=%s topic=%s payload=%s",
+                sync.entity_id,
+                message.topic,
+                payload,
+            )
+            sync.resolve_msg(payload)
