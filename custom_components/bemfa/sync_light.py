@@ -21,6 +21,81 @@ from .utils import has_key
 from .sync import SYNC_TYPES, ControllableSync
 
 
+def _clamp(value: int, min_value: int, max_value: int) -> int:
+    return min(max(value, min_value), max_value)
+
+
+def _kelvin_to_mired(kelvin: int) -> int:
+    return 1000000 // kelvin
+
+
+def _mired_to_kelvin(mired: int) -> int:
+    return 1000000 // mired
+
+
+def _is_supported_color_temp_mired(
+    value: int, attributes: ReadOnlyDict[Mapping[str, Any]]
+) -> bool:
+    if (
+        value <= 0
+        or not has_key(attributes, ATTR_MIN_COLOR_TEMP_KELVIN)
+        or not has_key(attributes, ATTR_MAX_COLOR_TEMP_KELVIN)
+    ):
+        return False
+
+    min_mired = _kelvin_to_mired(attributes[ATTR_MAX_COLOR_TEMP_KELVIN])
+    max_mired = _kelvin_to_mired(attributes[ATTR_MIN_COLOR_TEMP_KELVIN])
+    return min_mired <= value <= max_mired
+
+
+def _light_color_msg(attributes: ReadOnlyDict[Mapping[str, Any]]) -> str | int:
+    if has_key(attributes, ATTR_COLOR_TEMP_KELVIN):
+        return _kelvin_to_mired(attributes[ATTR_COLOR_TEMP_KELVIN])
+    if has_key(attributes, ATTR_RGB_COLOR):
+        return (
+            attributes[ATTR_RGB_COLOR][0] * 256 * 256
+            + attributes[ATTR_RGB_COLOR][1] * 256
+            + attributes[ATTR_RGB_COLOR][2]
+        )
+    return ""
+
+
+def _resolve_light_msg(
+    msg: list[str | int], attributes: ReadOnlyDict[Mapping[str, Any]]
+) -> tuple[str, str, dict[str, Any]]:
+    if len(msg) <= 1:
+        return DOMAIN, SERVICE_TURN_ON if msg[0] == MSG_ON else SERVICE_TURN_OFF, {}
+
+    data: dict[str, Any] = {ATTR_BRIGHTNESS_PCT: msg[1]}
+    if len(msg) <= 2:
+        return DOMAIN, SERVICE_TURN_ON if msg[0] == MSG_ON else SERVICE_TURN_OFF, data
+
+    color_value = msg[2]
+    supports_color_temp = (
+        has_key(attributes, ATTR_SUPPORTED_COLOR_MODES)
+        and ColorMode.COLOR_TEMP in attributes[ATTR_SUPPORTED_COLOR_MODES]
+    )
+    if (
+        isinstance(color_value, int)
+        and supports_color_temp
+        and _is_supported_color_temp_mired(color_value, attributes)
+    ):
+        kelvin = _mired_to_kelvin(color_value)
+        data[ATTR_COLOR_TEMP_KELVIN] = _clamp(
+            kelvin,
+            attributes[ATTR_MIN_COLOR_TEMP_KELVIN],
+            attributes[ATTR_MAX_COLOR_TEMP_KELVIN],
+        )
+    elif isinstance(color_value, int):
+        data[ATTR_RGB_COLOR] = [
+            color_value // 256 // 256,
+            color_value // 256 % 256,
+            color_value % 256,
+        ]
+
+    return DOMAIN, SERVICE_TURN_ON if msg[0] == MSG_ON else SERVICE_TURN_OFF, data
+
+
 @SYNC_TYPES.register("light")
 class Light(ControllableSync):
     """Sync a hass light entity to bemfa light device."""
@@ -45,13 +120,7 @@ class Light(ControllableSync):
             lambda state, attributes: round(attributes[ATTR_BRIGHTNESS] / 2.55)
             if has_key(attributes, ATTR_BRIGHTNESS)
             else "",
-            lambda state, attributes: 1000000 // attributes[ATTR_COLOR_TEMP_KELVIN]
-            if has_key(attributes, ATTR_COLOR_TEMP_KELVIN)
-            else attributes[ATTR_RGB_COLOR][0] * 256 * 256
-            + attributes[ATTR_RGB_COLOR][1] * 256
-            + attributes[ATTR_RGB_COLOR][2]
-            if has_key(attributes, ATTR_RGB_COLOR)
-            else "",
+            lambda state, attributes: _light_color_msg(attributes),
         ]
 
     def _msg_resolvers(
@@ -70,31 +139,6 @@ class Light(ControllableSync):
             (
                 0,
                 3,
-                lambda msg, attributes: (
-                    DOMAIN,
-                    SERVICE_TURN_ON if msg[0] == MSG_ON else SERVICE_TURN_OFF,
-                    {
-                        ATTR_BRIGHTNESS_PCT: msg[1],
-                        ATTR_COLOR_TEMP_KELVIN: min(
-                            max(1000000 // msg[2], attributes[ATTR_MAX_COLOR_TEMP_KELVIN]),
-                            attributes[ATTR_MIN_COLOR_TEMP_KELVIN],
-                        ),
-                    }
-                    if len(msg) > 2
-                    and has_key(attributes, ATTR_SUPPORTED_COLOR_MODES)
-                    and ColorMode.COLOR_TEMP in attributes[ATTR_SUPPORTED_COLOR_MODES]
-                    else {
-                        ATTR_BRIGHTNESS_PCT: msg[1],
-                        ATTR_RGB_COLOR: [
-                            msg[2] // 256 // 256,
-                            msg[2] // 256 % 256,
-                            msg[2] % 256,
-                        ],
-                    }
-                    if len(msg) > 2
-                    else {ATTR_BRIGHTNESS_PCT: msg[1]}
-                    if len(msg) > 1
-                    else {},
-                ),
+                _resolve_light_msg,
             )
         ]

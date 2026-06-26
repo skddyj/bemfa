@@ -4,7 +4,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 import voluptuous as vol
 
 from homeassistant import config_entries
@@ -17,14 +17,16 @@ from homeassistant.helpers.selector import (
     SelectSelectorMode,
 )
 
-from .sync import Sync
 from .const import (
     CONF_UID,
     DOMAIN,
     OPTIONS_CONFIG,
     OPTIONS_SELECT,
 )
-from .service import BemfaService
+
+if TYPE_CHECKING:
+    from .service import BemfaService
+    from .sync import Sync
 
 _LOGGER = logging.getLogger(__name__)
 
