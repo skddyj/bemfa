@@ -2,14 +2,14 @@
   "domain": "bemfa",
   "name": "Bemfa",
   "codeowners": [
-    "@larry-wong"
+    "@skddyj"
   ],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/larry-wong/bemfa",
+  "documentation": "https://github.com/skddyj/bemfa",
   "homekit": {},
   "iot_class": "cloud_push",
-  "issue_tracker": "https://github.com/larry-wong/bemfa/issues",
+  "issue_tracker": "https://github.com/skddyj/bemfa/issues",
   "loggers": [
     "custom_components.bemfa"
   ],
@@ -17,6 +17,6 @@
     "paho-mqtt==2.1.0"
   ],
   "ssdp": [],
-  "version": "1.4.4",
+  "version": "1.4.5",
   "zeroconf": []
 }
