@@ -2,7 +2,7 @@
     "config": {
         "abort": {
             "already_configured": "\u6b64\u79c1\u94a5\u5df2\u7ecf\u914d\u7f6e"
-          },
+        },
         "error": {
             "invalid_uid": "\u975e\u6cd5\u7684\u79c1\u94a5"
         },
@@ -22,7 +22,8 @@
                 "menu_options": {
                     "create_sync": "\u540c\u6b65\u5b9e\u4f53",
                     "modify_sync": "\u7f16\u8f91\u540c\u6b65",
-                    "destroy_sync": "\u5220\u9664\u540c\u6b65"
+                    "destroy_sync": "\u5220\u9664\u540c\u6b65",
+                    "create_syncs": "\u6279\u91cf\u540c\u6b65\u5b9e\u4f53"
                 }
             },
             "create_sync": {
@@ -103,6 +104,10 @@
             "empty": {
                 "title": "\u65e0\u6570\u636e",
                 "description": "\u6ca1\u6709\u53ef\u64cd\u4f5c\u7684\u540c\u6b65\u3002"
+            },
+            "create_syncs": {
+                "title": "\u6279\u91cf\u540c\u6b65\u5b9e\u4f53",
+                "description": "\u9009\u62e9\u591a\u4e2a\u5b9e\u4f53\u4e00\u6b21\u6027\u540c\u6b65\u81f3\u5df4\u6cd5\u4e91\uff0c\u8bbe\u5907\u540d\u81ea\u52a8\u4f7f\u7528\u5b9e\u4f53\u540d\u3002"
             }
         }
     }

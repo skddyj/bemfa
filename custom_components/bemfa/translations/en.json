@@ -2,7 +2,7 @@
     "config": {
         "abort": {
             "already_configured": "This UID has been already configured"
-          },
+        },
         "error": {
             "invalid_uid": "Invalid UID"
         },
@@ -22,7 +22,8 @@
                 "menu_options": {
                     "create_sync": "Create sync",
                     "modify_sync": "Modify sync",
-                    "destroy_sync": "Destroy sync(s)"
+                    "destroy_sync": "Destroy sync(s)",
+                    "create_syncs": "Batch create syncs"
                 }
             },
             "create_sync": {
@@ -103,6 +104,10 @@
             "empty": {
                 "title": "Empty",
                 "description": "No syncs found."
+            },
+            "create_syncs": {
+                "title": "Batch create syncs",
+                "description": "Select multiple entities to sync. Each one uses its entity name as the device name."
             }
         }
     }
