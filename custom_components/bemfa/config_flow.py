@@ -22,6 +22,7 @@ from .const import (
     CONF_UID,
     DOMAIN,
     OPTIONS_CONFIG,
+    OPTIONS_NAME,
     OPTIONS_SELECT,
 )
 from .service import BemfaService
@@ -109,6 +110,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             step_id="init",
             menu_options=[
                 "create_sync",
+                "create_syncs",
                 "modify_sync",
                 "destroy_sync",
             ],
@@ -154,6 +156,58 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 }
             ),
             last_step=False,
+        )
+
+    async def async_step_create_syncs(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Batch create hass-to-bemfa syncs.
+
+        Select multiple entities at once, all synced with their own
+        entity names and default configs.
+        """
+        service = self._get_service()
+        if user_input is not None:
+            # create all selected syncs, name each after its entity
+            for entity_id in user_input[OPTIONS_SELECT]:
+                sync = self._sync_dict[entity_id]
+                await service.async_create_sync(sync, {OPTIONS_NAME: sync.name})
+                if sync.config:
+                    self._config[sync.topic] = sync.config
+            return self.async_create_entry(
+                title="", data={OPTIONS_CONFIG: self._config}
+            )
+
+        all_topics = await service.async_fetch_all_topics()
+        all_syncs = service.collect_supported_syncs()
+        self._sync_dict = {}
+        for sync in all_syncs:
+            if sync.topic not in all_topics:
+                self._sync_dict[sync.entity_id] = sync
+
+        if not bool(self._sync_dict):
+            return self.async_show_form(step_id="empty", last_step=False)
+
+        return self.async_show_form(
+            step_id="create_syncs",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(OPTIONS_SELECT): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[
+                                SelectOptionDict(
+                                    value=sync.entity_id,
+                                    label=sync.generate_option_label(),
+                                )
+                                for sync in self._sync_dict.values()
+                            ],
+                            mode=SelectSelectorMode.LIST,
+                            multiple=True,
+                        )
+                    )
+                }
+            ),
+            last_step=True,
         )
 
     async def async_step_modify_sync(
